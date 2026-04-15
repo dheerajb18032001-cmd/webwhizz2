@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const { user, userRole, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -12,6 +13,10 @@ const Navbar = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
   };
 
   return (
@@ -27,17 +32,31 @@ const Navbar = () => {
           <li><a href="/courses">Courses</a></li>
           <li><a href="/about">About</a></li>
           <li><a href="/contact">Contact</a></li>
-          {user && userRole === 'student' && (
-            <li><a href="/student-dashboard">My Learning</a></li>
-          )}
-          {user && userRole === 'instructor' && (
-            <li><a href="/instructor-dashboard">My Courses</a></li>
-          )}
-          {user && userRole === 'admin' && (
-            <>
-              <li><a href="/admin-panel">Admin Utilities</a></li>
-              <li><a href="/admin-dashboard">Admin Dashboard</a></li>
-            </>
+          
+          {user && (
+            <li className="dropdown" onMouseEnter={toggleDropdown} onMouseLeave={() => setDropdownOpen(false)}>
+              <a href="#" className="dashboard-link">📊 Dashboard</a>
+              {dropdownOpen && (
+                <div className="dropdown-menu">
+                  {userRole === 'student' && (
+                    <>
+                      <a href="/student-dashboard" className="dropdown-item">📚 My Learning</a>
+                    </>
+                  )}
+                  {userRole === 'instructor' && (
+                    <>
+                      <a href="/instructor-dashboard" className="dropdown-item">🎓 My Courses</a>
+                    </>
+                  )}
+                  {userRole === 'admin' && (
+                    <>
+                      <a href="/admin-dashboard" className="dropdown-item">🛡️ Admin Dashboard</a>
+                      <a href="/admin-panel" className="dropdown-item">🛠️ Admin Utilities</a>
+                    </>
+                  )}
+                </div>
+              )}
+            </li>
           )}
           {user && <li><a href="/profile">Profile</a></li>}
         </ul>

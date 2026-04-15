@@ -52,6 +52,53 @@
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
+.dropdown {
+  position: relative;
+}
+
+.dashboard-link {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+.dashboard-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  margin-top: 0.5rem;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.8rem 1.2rem;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f0f0f0;
+  color: #dc3545;
+  font-weight: 600;
+  text-shadow: none;
+}
+
 .nav-auth {
   display: flex;
   align-items: center;
