@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "whizz-3fcf2"
+  },
+  "targets": {
+    "whizz-3fcf2": {
+      "hosting": {
+        "whizz-platform": [
+          "whizz-3fcf2"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

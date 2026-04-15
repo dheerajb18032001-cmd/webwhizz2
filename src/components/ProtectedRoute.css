@@ -1,0 +1,42 @@
+.protected-loading,
+.protected-error {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.protected-error h2 {
+  color: #c33;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.protected-error p {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.protected-error a {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: #333;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.protected-error a:hover {
+  background: #555;
+}
+
+.protected-loading p {
+  color: #666;
+  font-size: 1.2rem;
+}
