@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { db } from '../firebase/config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './Contact.css';
 
 const Contact = () => {
@@ -9,6 +11,7 @@ const Contact = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -22,14 +25,29 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // Save to Firebase 'client' collection
+      await addDoc(collection(db, 'client'), {
+        full_name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
       setSubmitted(true);
-      setLoading(false);
       setFormData({ name: '', email: '', subject: '', message: '' });
       setTimeout(() => setSubmitted(false), 5000);
-    }, 1500);
+    } catch (err) {
+      console.error('Error saving message:', err);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,6 +101,12 @@ const Contact = () => {
           {submitted && (
             <div className="success-message">
               ✅ Thanks for your message! We'll get back to you soon.
+            </div>
+          )}
+
+          {error && (
+            <div className="error-message">
+              ❌ {error}
             </div>
           )}
 

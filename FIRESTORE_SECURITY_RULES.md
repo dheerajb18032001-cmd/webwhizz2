@@ -34,6 +34,13 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (resource.data.studentId == request.auth.uid || request.auth.token.admin == true);
     }
     
+    // Allow anyone to create client messages, admins can read/delete
+    match /client/{clientId} {
+      allow create: if true;
+      allow read, delete: if request.auth.token.admin == true;
+      allow update: if request.auth.token.admin == true;
+    }
+    
     // Allow authenticated users to access other collections
     match /{document=**} {
       allow read, write: if request.auth != null;
