@@ -112,7 +112,13 @@ const CourseDetail = () => {
         </button>
       </div>
       <div className="course-hero">
-        <img src={course.image || 'https://via.placeholder.com/1200x400'} alt={course.title} />
+        <img 
+          src={course.image || 'https://via.placeholder.com/1200x400?text=' + encodeURIComponent(course.title)} 
+          alt={course.title}
+          onError={(e) => {
+            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="400"%3E%3Crect fill="%23f0f0f0" width="1200" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3E' + encodeURIComponent(course.title) + '%3C/text%3E%3C/svg%3E';
+          }}
+        />
         <div className="course-hero-overlay">
           <h1>{course.title}</h1>
           <p>{course.category}</p>
