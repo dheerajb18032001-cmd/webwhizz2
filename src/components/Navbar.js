@@ -35,7 +35,7 @@ const Navbar = () => {
           
           {user && (
             <li className="dropdown" onMouseEnter={toggleDropdown} onMouseLeave={() => setDropdownOpen(false)}>
-              <a href="#" className="dashboard-link">📊 Dashboard</a>
+              <button className="dashboard-link" onClick={(e) => { e.preventDefault(); toggleDropdown(); }}>📊 Dashboard</button>
               {dropdownOpen && (
                 <div className="dropdown-menu">
                   {userRole === 'student' && (
