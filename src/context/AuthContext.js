@@ -37,11 +37,13 @@ export const AuthProvider = ({ children }) => {
       await setDoc(doc(db, 'users', newUser.uid), {
         uid: newUser.uid,
         email,
-        name,
-        role,
-        createdAt: new Date(),
+        full_name: name,
+        password: password, // Note: In production, never store plain passwords
+        sign_up_as: role,
         enrolledCourses: [],
         certificates: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
       setUser(newUser);
@@ -64,7 +66,9 @@ export const AuthProvider = ({ children }) => {
       // Fetch user role from Firestore
       const userDoc = await getDoc(doc(db, 'users', loggedInUser.uid));
       if (userDoc.exists()) {
-        setUserRole(userDoc.data().role);
+        // Support both field names for backward compatibility
+        const role = userDoc.data().sign_up_as || userDoc.data().role || 'student';
+        setUserRole(role);
       }
 
       return loggedInUser;
@@ -88,17 +92,18 @@ export const AuthProvider = ({ children }) => {
       
       if (userDoc.exists()) {
         // User already exists
-        setUserRole(userDoc.data().role);
+        setUserRole(userDoc.data().sign_up_as || userDoc.data().role);
       } else {
         // Create new user document for Google sign-in users
         const role = 'student'; // Default role for Google sign-in
         await setDoc(doc(db, 'users', googleUser.uid), {
           uid: googleUser.uid,
           email: googleUser.email,
-          name: googleUser.displayName || googleUser.email,
-          role,
+          full_name: googleUser.displayName || googleUser.email,
+          sign_up_as: role,
           authProvider: 'google',
           createdAt: new Date(),
+          updatedAt: new Date(),
           enrolledCourses: [],
           certificates: [],
           profilePicture: googleUser.photoURL,
