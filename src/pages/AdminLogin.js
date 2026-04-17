@@ -19,6 +19,9 @@ const AdminLogin = () => {
     const fetchApprovedAdmins = async () => {
       try {
         setFetchingAdmins(true);
+        // Add small delay to ensure auth is ready
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const abc123Collection = collection(db, 'abc123');
         const querySnapshot = await getDocs(abc123Collection);
         const adminEmails = [];
@@ -30,17 +33,23 @@ const AdminLogin = () => {
           }
         });
         
-        setApprovedAdmins(adminEmails);
-        console.log('Approved admins loaded:', adminEmails);
+        if (adminEmails.length > 0) {
+          setApprovedAdmins(adminEmails);
+          console.log('✅ Approved admins loaded from Firestore:', adminEmails);
+        } else {
+          console.warn('❌ No admins found in abc123 collection');
+          throw new Error('No admins found');
+        }
       } catch (err) {
         console.error('Error fetching approved admins:', err);
-        setError('⚠️ Could not load admin list. Using default admins.');
         // Fallback to default admins if fetch fails
-        setApprovedAdmins([
+        const defaultAdmins = [
           'admin@whizz.com',
           'admin1@whizz.com',
           'admin2@whizz.com',
-        ]);
+        ];
+        setApprovedAdmins(defaultAdmins);
+        console.log('⚠️ Using default admin list:', defaultAdmins);
       } finally {
         setFetchingAdmins(false);
       }
@@ -115,12 +124,49 @@ const AdminLogin = () => {
 
     try {
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
+      provider.addScope('profile');
+      provider.addScope('email');
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      let userCredential;
+      try {
+        userCredential = await signInWithPopup(auth, provider);
+      } catch (popupErr) {
+        // Handle popup-specific errors
+        if (popupErr.code === 'auth/popup-closed-by-user') {
+          console.log('User closed popup');
+          setLoading(false);
+          return;
+        }
+        if (popupErr.code === 'auth/popup-blocked') {
+          setError('❌ Popup blocked! Please allow popups for this site.');
+          setLoading(false);
+          return;
+        }
+        throw popupErr;
+      }
+
       const user = userCredential.user;
+      
+      if (!user.email) {
+        setError('❌ Could not get email from Google account');
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
 
       // Check if email is in approved admins list
+      if (approvedAdmins.length === 0) {
+        setError('❌ Admin list not loaded. Please refresh and try again.');
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+
       if (!approvedAdmins.includes(user.email.toLowerCase())) {
-        setError('❌ Unauthorized! Only approved admins can access this panel.');
+        setError(`❌ Email ${user.email} is not authorized as admin.`);
         await auth.signOut();
         setLoading(false);
         return;
@@ -133,9 +179,11 @@ const AdminLogin = () => {
       }
     } catch (err) {
       console.error('Google login error:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('❌ Google login failed. Please try again.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed popup - no error message needed
+        return;
       }
+      setError('❌ Google login failed: ' + (err.message || 'Please try again.'));
     } finally {
       setLoading(false);
     }

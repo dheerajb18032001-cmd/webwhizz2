@@ -9,6 +9,9 @@
       ]
     }
   },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": [
     {
       "target": "whizz-platform",
