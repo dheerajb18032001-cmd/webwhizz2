@@ -1,21 +1,22 @@
 .about-container {
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f5f9ff 0%, #e8f4f8 50%, #f0f7ff 100%);
 }
 
 .about-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0078d4 0%, #00bcd4 100%);
   color: white;
   padding: 6rem 2rem;
   text-align: center;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 2px solid #b3e5fc;
   animation: slideDownFade 0.8s ease-out;
 }
 
 .about-hero h1 {
-  font-size: 3rem;
+  font-size: 3.2rem;
   margin-bottom: 1rem;
-  font-weight: bold;
+  font-weight: 800;
   animation: slideDown 0.8s ease-out;
+  letter-spacing: -0.5px;
 }
 
 .about-hero p {

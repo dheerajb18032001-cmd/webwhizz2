@@ -26,6 +26,8 @@ app.use(cors({
     'http://127.0.0.1:3002',
     'http://10.100.146.215:3002',
     'http://10.100.146.215:3001',
+    'https://whizz-3fcf2.web.app',
+    'https://whizz-3fcf2.firebaseapp.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,

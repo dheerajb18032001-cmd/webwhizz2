@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from 'firebase/firestore';
 import './InstructorDashboard.css';
 
 const InstructorDashboard = () => {
@@ -20,6 +18,8 @@ const InstructorDashboard = () => {
     image: '',
   });
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
   useEffect(() => {
     if (userRole !== 'instructor' && userRole !== 'admin') {
       navigate('/');
@@ -32,15 +32,20 @@ const InstructorDashboard = () => {
   const fetchInstructorCourses = async () => {
     try {
       if (user) {
-        const coursesRef = collection(db, 'courses');
-        const q = query(coursesRef, where('instructorId', '==', user.uid));
-        const snapshot = await getDocs(q);
+        const idToken = await user.getIdToken();
+        const headers = {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        };
 
-        const coursesList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCourses(coursesList);
+        const response = await fetch(`${API_BASE_URL}/courses/my-courses`, {
+          headers,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setCourses(result.data || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -60,28 +65,42 @@ const InstructorDashboard = () => {
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      const coursesRef = collection(db, 'courses');
-      const newCourse = {
-        ...formData,
-        instructorId: user.uid,
-        instructor: user.email,
-        createdAt: Timestamp.now(),
-        students: [],
-        status: 'draft',
+      const idToken = await user.getIdToken();
+      const headers = {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
       };
 
-      const docRef = await addDoc(coursesRef, newCourse);
-      setCourses((prev) => [...prev, { id: docRef.id, ...newCourse }]);
-      setFormData({
-        title: '',
-        description: '',
-        category: 'Web Development',
-        duration: '',
-        price: '',
-        image: '',
+      const response = await fetch(`${API_BASE_URL}/courses`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          duration: formData.duration,
+          price: formData.price,
+          image: formData.image,
+          level: 'beginner',
+        }),
       });
-      setShowCreateForm(false);
-      alert('Course created successfully!');
+
+      if (response.ok) {
+        const result = await response.json();
+        setCourses((prev) => [...prev, result.data]);
+        setFormData({
+          title: '',
+          description: '',
+          category: 'Web Development',
+          duration: '',
+          price: '',
+          image: '',
+        });
+        setShowCreateForm(false);
+        alert('Course created successfully!');
+      } else {
+        alert('Failed to create course');
+      }
     } catch (error) {
       console.error('Error creating course:', error);
       alert('Failed to create course');

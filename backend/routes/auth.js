@@ -19,69 +19,125 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // Create user in Firebase Auth
-    const userRecord = await firebaseAuth.createUser({
-      email,
-      password,
-      displayName: name,
-    });
+    console.log(`📝 Signup attempt: ${email} (Role: ${role || 'student'})`);
 
-    // Store user data in Firestore
-    await db.collection('users').doc(userRecord.uid).set({
+    // Use Firebase REST API to create user (works with default credentials)
+    const apiKey = process.env.FIREBASE_API_KEY || 'AIzaSyBE5HAG2wM3lwvwrYnLN2QBiQP2Kuc9n98';
+    const signupUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+
+    let userRecord;
+    try {
+      const signupResponse = await fetch(signupUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+        }),
+      });
+
+      if (!signupResponse.ok) {
+        const errorData = await signupResponse.json();
+        throw new Error(errorData.error?.message || 'Firebase signup failed');
+      }
+
+      const signupData = await signupResponse.json();
+      console.log(`✅ Firebase Auth user created: ${email}`);
+
+      userRecord = {
+        uid: signupData.localId,
+        email: signupData.email,
+      };
+    } catch (firebaseError) {
+      console.error('❌ Firebase REST API error:', firebaseError.message);
+      return res.status(400).json({
+        success: false,
+        message: firebaseError.message,
+      });
+    }
+
+    // Store user data in Firestore with complete profile
+    const userData = {
       uid: userRecord.uid,
       email,
-      name,
+      fullName: name,
       role: role || 'student',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       profilePicture: null,
       bio: '',
       phone: '',
-    });
+      status: 'active',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      enrolledCourses: [],
+      completedCourses: [],
+    };
 
-    // Generate custom claims
-    await firebaseAuth.setCustomUserClaims(userRecord.uid, {
-      role: role || 'student',
-    });
+    try {
+      await db.collection('users').doc(userRecord.uid).set(userData);
+      console.log(`✅ User document created in Firestore: ${userRecord.uid}`);
+    } catch (firestoreError) {
+      console.error('❌ Firestore error:', firestoreError.message);
+      // Continue anyway - user was created in Auth
+    }
+
+    // Try to set custom claims (may fail with default credentials, but that's okay)
+    try {
+      await firebaseAuth.setCustomUserClaims(userRecord.uid, {
+        role: role || 'student',
+      });
+      console.log(`✅ Custom claims set for: ${email}`);
+    } catch (claimsError) {
+      console.warn(`⚠️  Could not set custom claims (using dev mode): ${claimsError.message}`);
+      // This is expected in development mode without service account
+    }
+
+    console.log(`✅ User created successfully: ${email} (Role: ${role || 'student'})`);
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      user: {
+      data: {
         uid: userRecord.uid,
         email,
-        name,
+        fullName: name,
         role: role || 'student',
       },
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('❌ Signup error:', error.message);
+    console.error('Error details:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Signup failed',
     });
   }
 });
 
-// ✅ GET CUSTOM TOKEN FOR FRONTEND LOGIN
-router.post('/login', async (req, res) => {
+// ✅ UPDATE USER PROFILE
+router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { fullName, bio, phone, profilePicture } = req.body;
+    const updates = {};
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required',
-      });
-    }
+    if (fullName) updates.fullName = fullName;
+    if (bio !== undefined) updates.bio = bio;
+    if (phone !== undefined) updates.phone = phone;
+    if (profilePicture !== undefined) updates.profilePicture = profilePicture;
 
-    // Note: Firebase Admin SDK cannot directly verify passwords
-    // Frontend should handle login via Firebase SDK and send ID token
-    res.status(200).json({
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    await db.collection('users').doc(req.user.uid).update(updates);
+
+    console.log(`✅ User profile updated: ${req.user.uid}`);
+
+    res.json({
       success: true,
-      message: 'Use Firebase SDK on frontend for authentication',
-      instruction: 'Send idToken from Firebase Client SDK to backend',
+      message: 'Profile updated successfully',
+      data: updates,
     });
   } catch (error) {
+    console.error('❌ Profile update error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,

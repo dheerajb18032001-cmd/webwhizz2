@@ -30,21 +30,30 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password, name, role = 'student') => {
     try {
       setError(null);
+      
+      // Use backend API to create user with proper role setup
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const signupResponse = await fetch(`${backendUrl}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          role: role || 'student',
+        }),
+      });
+
+      if (!signupResponse.ok) {
+        const errorData = await signupResponse.json();
+        throw new Error(errorData.message || 'Backend signup failed');
+      }
+
+      // Now sign in with Firebase Auth
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = result.user;
-
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', newUser.uid), {
-        uid: newUser.uid,
-        email,
-        full_name: name,
-        password: password, // Note: In production, never store plain passwords
-        sign_up_as: role,
-        enrolledCourses: [],
-        certificates: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
 
       setUser(newUser);
       setUserRole(role);
@@ -64,11 +73,20 @@ export const AuthProvider = ({ children }) => {
       setUser(loggedInUser);
 
       // Fetch user role from Firestore
-      const userDoc = await getDoc(doc(db, 'users', loggedInUser.uid));
-      if (userDoc.exists()) {
-        // Support both field names for backward compatibility
-        const role = userDoc.data().sign_up_as || userDoc.data().role || 'student';
-        setUserRole(role);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', loggedInUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Support both field names: new backend format (role) and old format (sign_up_as)
+          const role = userData.role || userData.sign_up_as || 'student';
+          setUserRole(role);
+        } else {
+          // User doc doesn't exist, set default role as student
+          setUserRole('student');
+        }
+      } catch (firestoreError) {
+        console.warn('Could not fetch user role from Firestore:', firestoreError);
+        setUserRole('student');
       }
 
       return loggedInUser;

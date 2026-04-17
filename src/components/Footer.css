@@ -1,7 +1,20 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .footer {
-  background: #1a1a2e;
-  color: white;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4f8 50%, #f5f9ff 100%);
+  color: #333;
   margin-top: 4rem;
+  border-top: 2px solid #b3e5fc;
+  animation: fadeInUp 0.8s ease-out;
 }
 
 .footer-content {
@@ -16,7 +29,8 @@
 .footer-section h3 {
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
-  color: #333;
+  color: #0078d4;
+  font-weight: 700;
 }
 
 .footer-section ul {
@@ -29,14 +43,15 @@
 }
 
 .footer-section a {
-  color: #ccc;
+  color: #555;
   text-decoration: none;
-  transition: color 0.3s;
+  transition: all 0.3s ease;
   font-size: 0.95rem;
 }
 
 .footer-section a:hover {
-  color: #667eea;
+  color: #0078d4;
+  padding-left: 5px;
 }
 
 .social-links {
@@ -48,19 +63,20 @@
 .social-icon {
   width: 40px;
   height: 40px;
-  background: #333;
+  background: linear-gradient(135deg, #0078d4, #00bcd4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   color: white;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
   font-weight: bold;
 }
 
 .social-icon:hover {
-  background: #555;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 120, 212, 0.3);
 }
 
 .newsletter {
@@ -78,30 +94,32 @@
 
 .newsletter button {
   padding: 0.5rem 1rem;
-  background: #333;
+  background: linear-gradient(135deg, #0078d4, #00bcd4);
   color: white;
   border: none;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
-  transition: background 0.3s;
-  font-weight: bold;
+  transition: all 0.3s ease;
+  font-weight: 600;
 }
 
 .newsletter button:hover {
-  background: #555;
+  box-shadow: 0 8px 15px rgba(0, 120, 212, 0.3);
+  transform: translateY(-2px);
 }
 
 .footer-bottom {
-  background: #0f0f1e;
+  background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 100%);
   padding: 2rem;
   text-align: center;
-  border-top: 1px solid #333;
+  border-top: 2px solid #b3e5fc;
 }
 
 .footer-bottom p {
   margin: 0.3rem 0;
   font-size: 0.9rem;
-  color: #999;
+  color: #555;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {

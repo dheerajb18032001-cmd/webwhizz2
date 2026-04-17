@@ -1,0 +1,1 @@
+https://console.firebase.google.com/project/whizz-3fcf2/firestore/rules

@@ -40,10 +40,9 @@ const Footer = () => {
         <div className="footer-section">
           <h3>Connect With Us</h3>
           <div className="social-links">
-            <a href="#facebook" className="social-icon">f</a>
-            <a href="#twitter" className="social-icon">𝕏</a>
-            <a href="#linkedin" className="social-icon">in</a>
-            <a href="#instagram" className="social-icon">📷</a>
+            <a href="https://www.facebook.com/dheerajheet.singh.bisht" target="_blank" rel="noopener noreferrer" className="social-icon" title="Facebook">f</a>
+            <a href="https://www.linkedin.com/in/rpwhiz" target="_blank" rel="noopener noreferrer" className="social-icon" title="LinkedIn">in</a>
+            <a href="https://www.instagram.com/dheeraj.heet.singh.bisht" target="_blank" rel="noopener noreferrer" className="social-icon" title="Instagram">📷</a>
           </div>
           <div className="newsletter">
             <input type="email" placeholder="Your email" />

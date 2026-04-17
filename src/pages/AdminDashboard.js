@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -10,218 +10,94 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalCourses: 0,
-    totalEnrollments: 0,
-  });
+  const [enrollments, setEnrollments] = useState([]);
+  const [stats, setStats] = useState({ totalUsers: 0, totalCourses: 0, totalEnrollments: 0, totalStudents: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (userRole !== 'admin') {
-      navigate('/');
-      return;
-    }
-
+    if (userRole !== 'admin') { navigate('/'); return; }
     fetchAdminData();
   }, [user, userRole, navigate]);
 
   const fetchAdminData = async () => {
     try {
-      // Fetch all users
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const usersList = usersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const usersList = (await getDocs(collection(db, 'users'))).docs.map(d => ({ id: d.id, ...d.data() }));
+      const coursesList = (await getDocs(collection(db, 'courses'))).docs.map(d => ({ id: d.id, ...d.data() }));
+      const enrollmentsList = (await getDocs(collection(db, 'enrollments'))).docs.map(d => ({ id: d.id, ...d.data() }));
       setUsers(usersList);
-
-      // Fetch all courses
-      const coursesSnapshot = await getDocs(collection(db, 'courses'));
-      const coursesList = coursesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
       setCourses(coursesList);
-
-      // Fetch enrollments
-      const enrollmentsSnapshot = await getDocs(collection(db, 'enrollments'));
-
+      setEnrollments(enrollmentsList);
       setStats({
         totalUsers: usersList.length,
         totalCourses: coursesList.length,
-        totalEnrollments: enrollmentsSnapshot.size,
+        totalEnrollments: enrollmentsList.length,
+        totalStudents: usersList.filter(u => u.role === 'student').length
       });
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-    } finally {
-      setLoading(false);
+    } catch (e) { console.error('Error:', e); }
+    finally { setLoading(false); }
+  };
+
+  const handleDeleteUser = async u => {
+    if (window.confirm('Delete user?')) {
+      try {
+        await deleteDoc(doc(db, 'users', u));
+        setUsers(p => p.filter(x => x.id !== u));
+        alert('User deleted');
+      } catch (e) { console.error(e); alert('Failed'); }
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleDeleteCourse = async c => {
+    if (window.confirm('Delete course?')) {
       try {
-        await deleteDoc(doc(db, 'users', userId));
-        setUsers((prev) => prev.filter((u) => u.id !== userId));
-        alert('User deleted successfully');
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user');
-      }
+        await deleteDoc(doc(db, 'courses', c));
+        setCourses(p => p.filter(x => x.id !== c));
+        alert('Course deleted');
+      } catch (e) { console.error(e); alert('Failed'); }
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
-      try {
-        await deleteDoc(doc(db, 'courses', courseId));
-        setCourses((prev) => prev.filter((c) => c.id !== courseId));
-        alert('Course deleted successfully');
-      } catch (error) {
-        console.error('Error deleting course:', error);
-        alert('Failed to delete course');
-      }
-    }
-  };
+  const filtered = users.filter(u => !searchTerm || u.name?.toLowerCase().includes(searchTerm) || u.email?.toLowerCase().includes(searchTerm));
+
+  if (loading) return <div className="admin-dashboard"><p>Loading...</p></div>;
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
+      <div className="admin-header">
         <h1>🛡️ Admin Dashboard</h1>
-        <p>Manage platform, users, and courses</p>
+        <p>Platform Management</p>
       </div>
 
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          Dashboard
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'courses' ? 'active' : ''}`}
-          onClick={() => setActiveTab('courses')}
-        >
-          Courses
-        </button>
+      <div className="admin-tabs">
+        <button className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</button>
+        <button className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>👥 Users</button>
+        <button className={`tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>📚 Courses</button>
+        <button className={`tab-btn ${activeTab === 'enrollments' ? 'active' : ''}`} onClick={() => setActiveTab('enrollments')}>📝 Enrollments</button>
       </div>
 
-      {loading ? (
-        <div className="loading">Loading admin dashboard...</div>
-      ) : (
-        <>
-          {activeTab === 'dashboard' && (
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <div className="stat-icon">👥</div>
-                <div className="stat-content">
-                  <h3>{stats.totalUsers}</h3>
-                  <p>Total Users</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">📚</div>
-                <div className="stat-content">
-                  <h3>{stats.totalCourses}</h3>
-                  <p>Total Courses</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">📝</div>
-                <div className="stat-content">
-                  <h3>{stats.totalEnrollments}</h3>
-                  <p>Total Enrollments</p>
-                </div>
-              </div>
-            </div>
-          )}
+      {activeTab === 'dashboard' && <div className="dashboard-content"><div className="stats-grid">
+        <div className="stat-box"><div className="stat-icon">👥</div><div className="stat-label">Total Users</div><div className="stat-value">{stats.totalUsers}</div></div>
+        <div className="stat-box"><div className="stat-icon">🎓</div><div className="stat-label">Active Students</div><div className="stat-value">{stats.totalStudents}</div></div>
+        <div className="stat-box"><div className="stat-icon">📚</div><div className="stat-label">Total Courses</div><div className="stat-value">{stats.totalCourses}</div></div>
+        <div className="stat-box"><div className="stat-icon">📝</div><div className="stat-label">Total Enrollments</div><div className="stat-value">{stats.totalEnrollments}</div></div>
+      </div></div>}
 
-          {activeTab === 'users' && (
-            <div className="manage-section">
-              <h2>All Users ({users.length})</h2>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Email</th>
-                      <th>Name</th>
-                      <th>Role</th>
-                      <th>Joined</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td>{user.email}</td>
-                        <td>{user.name}</td>
-                        <td>
-                          <span className={`role-badge ${user.role}`}>{user.role}</span>
-                        </td>
-                        <td>{new Date(user.createdAt?.toDate?.() || Date.now()).toLocaleDateString()}</td>
-                        <td>
-                          <button className="action-btn delete" onClick={() => handleDeleteUser(user.id)}>
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {activeTab === 'users' && <div className="users-content">
+        <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value.toLowerCase())} className="search-input" />
+        <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Role</th><th>Action</th></tr></thead><tbody>
+          {filtered.map(u => <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td>{u.phone}</td><td>{u.address}</td><td>{u.role}</td><td><button className="delete-btn" onClick={() => handleDeleteUser(u.id)}>Delete</button></td></tr>)}
+        </tbody></table>
+      </div>}
 
-          {activeTab === 'courses' && (
-            <div className="manage-section">
-              <h2>All Courses ({courses.length})</h2>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Course Title</th>
-                      <th>Instructor</th>
-                      <th>Category</th>
-                      <th>Students</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {courses.map((course) => (
-                      <tr key={course.id}>
-                        <td>{course.title}</td>
-                        <td>{course.instructor}</td>
-                        <td>{course.category}</td>
-                        <td>{course.students?.length || 0}</td>
-                        <td>
-                          <span className={`status-badge ${course.status}`}>{course.status}</span>
-                        </td>
-                        <td>
-                          <button
-                            className="action-btn delete"
-                            onClick={() => handleDeleteCourse(course.id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      {activeTab === 'courses' && <div className="courses-content"><div className="courses-grid">
+        {courses.map(c => <div key={c.id} className="course-admin-card"><h3>{c.title}</h3><p>{c.description?.substring(0, 100)}</p><span>₹{c.price}</span><button className="delete-btn" onClick={() => handleDeleteCourse(c.id)}>Delete</button></div>)}
+      </div></div>}
+
+      {activeTab === 'enrollments' && <div className="enrollments-content"><table><thead><tr><th>Student</th><th>Course</th><th>Date</th><th>Progress</th></tr></thead><tbody>
+        {enrollments.map(e => <tr key={e.id}><td>{users.find(u => u.id === e.studentId)?.email}</td><td>{courses.find(c => c.id === e.courseId)?.title}</td><td>{new Date(e.enrollmentDate?.toDate?.() || e.enrollmentDate).toLocaleDateString()}</td><td>{e.progress || 0}%</td></tr>)}
+      </tbody></table></div>}
     </div>
   );
 };

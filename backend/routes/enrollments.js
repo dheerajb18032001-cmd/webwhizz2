@@ -74,9 +74,15 @@ router.post('/enroll', verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('❌ Enrollment Error:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       message: error.message,
+      details: error.code,
     });
   }
 });

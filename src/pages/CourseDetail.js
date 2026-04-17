@@ -26,7 +26,7 @@ const CourseDetail = () => {
 
   const checkEnrollmentStatus = async () => {
     if (user && courseId) {
-      const enrolled = await isStudentEnrolled(user.uid, courseId);
+      const enrolled = await isStudentEnrolled(user, courseId);
       setIsEnrolled(enrolled);
     }
   };
@@ -42,8 +42,7 @@ const CourseDetail = () => {
     
     try {
       const result = await enrollStudentInCourse(
-        user.uid,
-        user.email,
+        user,
         courseId,
         course.title
       );
