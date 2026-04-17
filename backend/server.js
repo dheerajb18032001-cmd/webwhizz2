@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
 const enrollmentRoutes = require('./routes/enrollments');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 Handler
 app.use((req, res) => {
@@ -58,6 +60,35 @@ app.use((req, res) => {
     success: false,
     message: 'Endpoint not found',
     path: req.path
+  });
+});
+
+// Error Handler
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
+});
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`
+╔════════════════════════════════════════════════════════╗
+║   🚀 Whizz Backend Server Running                      ║
+║   📍 Port: ${PORT}                                          ║
+║   🌐 URL: http://localhost:${PORT}                    ║
+║   💾 Database: Firebase Firestore                      ║
+║   🔐 Auth: Firebase Authentication                     ║
+║   🛡️ Admin Routes: /api/admin                          ║
+╚════════════════════════════════════════════════════════╝
+  `);
+});
+
+module.exports = app;
+
   });
 });
 
