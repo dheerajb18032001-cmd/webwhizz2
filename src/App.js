@@ -12,6 +12,7 @@ import CourseDetail from './pages/CourseDetail';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import AdminPanel from './pages/AdminPanel';
+import AdminLogin from './pages/AdminLogin';
 import StudentDashboard from './pages/StudentDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -31,6 +32,7 @@ function AppContent() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/courses" element={<CourseList />} />
         <Route path="/course/:courseId" element={<CourseDetail />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
         <Route
           path="/admin-panel"
           element={

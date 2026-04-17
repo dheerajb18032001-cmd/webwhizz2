@@ -33,6 +33,13 @@ const Navbar = () => {
           <li><a href="/about">About</a></li>
           <li><a href="/contact">Contact</a></li>
           
+          {/* Admin Login Box */}
+          <li className="admin-login-item">
+            <a href="/admin-login" className="admin-login-link" title="Admin Access">
+              🛡️ Admin
+            </a>
+          </li>
+          
           {user && (
             <li className="dropdown" onMouseEnter={toggleDropdown} onMouseLeave={() => setDropdownOpen(false)}>
               <button className="dashboard-link" onClick={(e) => { e.preventDefault(); toggleDropdown(); }}>📊 Dashboard</button>
@@ -51,7 +58,7 @@ const Navbar = () => {
                   {userRole === 'admin' && (
                     <>
                       <a href="/admin-dashboard" className="dropdown-item">🛡️ Admin Dashboard</a>
-                      <a href="/admin-panel" className="dropdown-item">🛠️ Admin Utilities</a>
+                      <a href="/admin-panel" className="dropdown-item">🛠️ Admin Panel</a>
                     </>
                   )}
                 </div>

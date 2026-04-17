@@ -157,6 +157,31 @@
   padding-left: 1.5rem;
 }
 
+.admin-login-item {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  border-radius: 8px;
+  padding: 0 1rem !important;
+  margin-left: auto;
+}
+
+.admin-login-link {
+  color: white !important;
+  font-weight: 700 !important;
+  display: inline-block !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  position: relative;
+}
+
+.admin-login-link:hover {
+  background: linear-gradient(135deg, #764ba2, #56408f) !important;
+  color: white !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4) !important;
+}
+
 .nav-auth {
   display: flex;
   align-items: center;
