@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { enrollStudentInCourse, isStudentEnrolled } from '../firebase/enrollmentService';
 import sampleCourses from '../data/sampleCourses';
@@ -17,12 +17,70 @@ const CourseDetail = () => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [enrollMessage, setEnrollMessage] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [studentDetails, setStudentDetails] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [loadingUserData, setLoadingUserData] = useState(true);
 
   useEffect(() => {
     fetchCourseDetail();
     checkEnrollmentStatus();
+    trackCourseExplore();
+    loadStudentDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, user]);
+
+  const loadStudentDetails = async () => {
+    if (user) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setStudentDetails({
+            name: data.name || '',
+            email: data.email || user.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+          });
+        } else {
+          setStudentDetails({
+            name: user.displayName || '',
+            email: user.email || '',
+            phone: '',
+            address: '',
+          });
+        }
+      } catch (err) {
+        console.error('Error loading user data:', err);
+      }
+    }
+    setLoadingUserData(false);
+  };
+
+  const trackCourseExplore = async () => {
+    if (user && courseId) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const explored = userDoc.data().exploreredCourses || [];
+          if (!explored.includes(courseId)) {
+            await updateDoc(userRef, {
+              exploreredCourses: [...explored, courseId]
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error tracking course explore:', err);
+      }
+    }
+  };
 
   const checkEnrollmentStatus = async () => {
     if (user && courseId) {
@@ -31,9 +89,60 @@ const CourseDetail = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!studentDetails.name.trim()) errors.name = 'Name is required';
+    if (!studentDetails.email.trim()) errors.email = 'Email is required';
+    if (!studentDetails.phone.trim()) errors.phone = 'Phone number is required';
+    if (!studentDetails.address.trim()) errors.address = 'Address is required';
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setStudentDetails({
+      ...studentDetails,
+      [name]: value
+    });
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
+  };
+
+  const handleSaveDetails = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        name: studentDetails.name,
+        email: studentDetails.email,
+        phone: studentDetails.phone,
+        address: studentDetails.address,
+      });
+      setShowForm(false);
+      setEnrollMessage('');
+      handleEnrollment();
+    } catch (err) {
+      console.error('Error saving details:', err);
+      setEnrollMessage('❌ Failed to save details. Please try again.');
+    }
+  };
+
   const handleEnrollment = async () => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+
+    // Check if form needs to be shown
+    if (!studentDetails.name || !studentDetails.phone || !studentDetails.address) {
+      setShowForm(true);
       return;
     }
 
@@ -91,7 +200,7 @@ const CourseDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || loadingUserData) {
     return <div className="course-detail-loading">Loading course details...</div>;
   }
 
@@ -105,11 +214,90 @@ const CourseDetail = () => {
 
   return (
     <div className="course-detail-container">
+      {showForm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Complete Your Profile</h2>
+            <p>Please fill in your details to enroll in this course</p>
+            
+            <form className="student-form">
+              <div className="form-group">
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={studentDetails.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                  className={formErrors.name ? 'input-error' : ''}
+                />
+                {formErrors.name && <span className="error-text">{formErrors.name}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={studentDetails.email}
+                  disabled
+                  className="input-disabled"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number *</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={studentDetails.phone}
+                  onChange={handleInputChange}
+                  placeholder="Enter your phone number"
+                  className={formErrors.phone ? 'input-error' : ''}
+                />
+                {formErrors.phone && <span className="error-text">{formErrors.phone}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Address *</label>
+                <textarea
+                  name="address"
+                  value={studentDetails.address}
+                  onChange={handleInputChange}
+                  placeholder="Enter your address"
+                  className={formErrors.address ? 'input-error' : ''}
+                  rows="3"
+                />
+                {formErrors.address && <span className="error-text">{formErrors.address}</span>}
+              </div>
+
+              <div className="form-buttons">
+                <button
+                  type="button"
+                  className="btn btn-save"
+                  onClick={handleSaveDetails}
+                >
+                  Save & Enroll
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-cancel"
+                  onClick={() => setShowForm(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="back-link">
         <button onClick={() => navigate('/courses')} className="back-btn">
           ← Back to Courses
         </button>
       </div>
+
       <div className="course-hero">
         <img 
           src={course.image || 'https://via.placeholder.com/1200x400?text=' + encodeURIComponent(course.title)} 
