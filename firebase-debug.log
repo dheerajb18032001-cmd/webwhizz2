@@ -1,0 +1,62 @@
+[debug] [2026-04-17T10:19:25.425Z] ----------------------------------------------------------------------
+[debug] [2026-04-17T10:19:25.432Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\dheer\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only firestore --project whizz-3fcf2
+[debug] [2026-04-17T10:19:25.433Z] CLI Version:   15.14.0
+[debug] [2026-04-17T10:19:25.434Z] Platform:      win32
+[debug] [2026-04-17T10:19:25.434Z] Node Version:  v24.14.1
+[debug] [2026-04-17T10:19:25.435Z] Time:          Fri Apr 17 2026 15:49:25 GMT+0530 (India Standard Time)
+[debug] [2026-04-17T10:19:25.435Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-17T10:19:29.002Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"projects"}
+[debug] [2026-04-17T10:19:29.009Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-17T10:19:29.009Z] > authorizing via signed-in user (dheerajb18032001@gmail.com)
+[debug] [2026-04-17T10:19:29.009Z] [iam] checking project whizz-3fcf2 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-04-17T10:19:29.011Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:29.012Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:29.013Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/whizz-3fcf2:testIamPermissions [none]
+[debug] [2026-04-17T10:19:29.014Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/whizz-3fcf2:testIamPermissions  x-goog-user-project=whizz-3fcf2
+[debug] [2026-04-17T10:19:29.014Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/whizz-3fcf2:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-04-17T10:19:31.117Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/whizz-3fcf2:testIamPermissions 200
+[debug] [2026-04-17T10:19:31.117Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/whizz-3fcf2:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'whizz-3fcf2'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-17T10:19:31.138Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:31.139Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:31.140Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/whizz-3fcf2/databases/(default) [none]
+[debug] [2026-04-17T10:19:32.694Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/whizz-3fcf2/databases/(default) 200
+[debug] [2026-04-17T10:19:32.694Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/whizz-3fcf2/databases/(default) {"name":"projects/whizz-3fcf2/databases/(default)","uid":"c9bc5515-a843-45c7-a7b7-593d225cf0ec","createTime":"2026-04-15T05:21:03.299312Z","updateTime":"2026-04-15T05:21:03.299312Z","locationId":"asia-south2","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-17T09:19:33.007741Z","appEngineIntegrationMode":"DISABLED","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IKuo9MfU9JMDMPT3w5eR75MD"}
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-17T10:19:32.700Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:32.700Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:32.701Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2:test [none]
+[debug] [2026-04-17T10:19:32.702Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2:test [omitted]
+[debug] [2026-04-17T10:19:34.576Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2:test 200
+[debug] [2026-04-17T10:19:34.576Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2:test {}
+[info] +  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-04-17T10:19:34.581Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:34.581Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:34.582Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/releases pageSize=10&pageToken=
+[debug] [2026-04-17T10:19:35.123Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/releases 200
+[debug] [2026-04-17T10:19:35.124Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/releases {"releases":[{"name":"projects/whizz-3fcf2/releases/cloud.firestore","rulesetName":"projects/whizz-3fcf2/rulesets/f64309fe-59a8-4962-8aa7-6888fd3e8b02","createTime":"2026-04-15T05:33:38.360291Z","updateTime":"2026-04-17T10:09:04.641927Z"}]}
+[debug] [2026-04-17T10:19:35.124Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:35.124Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:35.125Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets/f64309fe-59a8-4962-8aa7-6888fd3e8b02 [none]
+[debug] [2026-04-17T10:19:36.488Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets/f64309fe-59a8-4962-8aa7-6888fd3e8b02 200
+[debug] [2026-04-17T10:19:36.489Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets/f64309fe-59a8-4962-8aa7-6888fd3e8b02 [omitted]
+[info] i  firestore: uploading rules firestore.rules... 
+[debug] [2026-04-17T10:19:36.495Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:36.495Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:36.496Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets [none]
+[debug] [2026-04-17T10:19:36.496Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets [omitted]
+[debug] [2026-04-17T10:19:37.987Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets 200
+[debug] [2026-04-17T10:19:37.988Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/rulesets {"name":"projects/whizz-3fcf2/rulesets/0dccb79a-d98f-461d-9953-4b7b424ae0af","source":{"files":[{"content":"rules_version = '2';\r\n\r\nservice cloud.firestore {\r\n  match /databases/{database}/documents {\r\n    \r\n    // Approved admins collection - allow read for unauthenticated users during login\r\n    match /abc123/{docId} {\r\n      allow read: if true;  // Allow anyone to read admin emails during login\r\n      allow create, update, delete: if request.auth.token.admin == true;\r\n    }\r\n\r\n    // Users collection - own data or admins\r\n    match /users/{userId} {\r\n      allow read: if request.auth.uid == userId || request.auth.token.admin == true;\r\n      allow create: if request.auth.uid == userId;\r\n      allow update: if request.auth.uid == userId || request.auth.token.admin == true;\r\n      allow delete: if request.auth.token.admin == true;\r\n    }\r\n    \r\n    // Courses - Public read, admin/instructor write\r\n    match /courses/{courseId} {\r\n      allow read: if true;  // Anyone can read courses\r\n      allow create, update: if request.auth != null && (request.auth.token.admin == true || request.auth.token.instructor == true);\r\n      allow delete: if request.auth.token.admin == true;\r\n    }\r\n    \r\n    // Enrollments - Users can manage their own, admins can manage all\r\n    match /enrollments/{enrollmentId} {\r\n      allow read: if request.auth != null;\r\n      allow create: if request.auth != null;\r\n      allow update: if request.auth.uid == resource.data.studentId || request.auth.token.admin == true;\r\n      allow delete: if request.auth.token.admin == true;\r\n    }\r\n    \r\n    // Client messages - public create, admin read/delete\r\n    match /client/{clientId} {\r\n      allow create: if true;\r\n      allow read, update, delete: if request.auth.token.admin == true;\r\n    }\r\n\r\n    // Instructors collection\r\n    match /instructors/{instructorId} {\r\n      allow read: if true;\r\n      allow create, update: if request.auth.uid == instructorId || request.auth.token.admin == true;\r\n      allow delete: if request.auth.token.admin == true;\r\n    }\r\n\r\n    // Certificates\r\n    match /certificates/{certificateId} {\r\n      allow read: if request.auth != null;\r\n      allow create, update, delete: if request.auth.token.admin == true;\r\n    }\r\n\r\n    // Default deny all other documents\r\n    match /{document=**} {\r\n      allow read, write: if false;\r\n    }\r\n  }\r\n}\r\n","name":"firestore.rules"}]},"createTime":"2026-04-17T10:19:38.247583Z","metadata":{"services":["cloud.firestore"]}}
+[debug] [2026-04-17T10:19:37.988Z] [rules] created ruleset projects/whizz-3fcf2/rulesets/0dccb79a-d98f-461d-9953-4b7b424ae0af
+[info] i  firestore: deploying indexes... 
+[debug] [2026-04-17T10:19:37.989Z] [rules] releasing cloud.firestore/(default) with ruleset projects/whizz-3fcf2/rulesets/0dccb79a-d98f-461d-9953-4b7b424ae0af
+[debug] [2026-04-17T10:19:37.990Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:37.990Z] Checked if tokens are valid: true, expires at: 1776422382302
+[debug] [2026-04-17T10:19:37.990Z] >>> [apiv2][query] PATCH https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/releases/cloud.firestore/(default) [none]
+[debug] [2026-04-17T10:19:37.991Z] >>> [apiv2][body] PATCH https://firebaserules.googleapis.com/v1/projects/whizz-3fcf2/releases/cloud.firestore/(default) {"release":{"name":"projects/whizz-3fcf2/releases/cloud.firestore/(default)","rulesetName":"projects/whizz-3fcf2/rulesets/0dccb79a-d98f-461d-9953-4b7b424ae0af"}}

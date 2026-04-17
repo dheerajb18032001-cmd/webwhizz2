@@ -131,17 +131,25 @@ const AdminLogin = () => {
       });
 
       let userCredential;
+      
       try {
+        // Try popup first
         userCredential = await signInWithPopup(auth, provider);
       } catch (popupErr) {
-        // Handle popup-specific errors
-        if (popupErr.code === 'auth/popup-closed-by-user') {
-          console.log('User closed popup');
-          setLoading(false);
-          return;
-        }
-        if (popupErr.code === 'auth/popup-blocked') {
-          setError('❌ Popup blocked! Please allow popups for this site.');
+        console.warn('Popup error, trying redirect:', popupErr.code);
+        
+        // If popup fails due to popup-blocked or COOP errors, try redirect
+        if (popupErr.code === 'auth/popup-blocked' || 
+            popupErr.code === 'auth/popup-closed-by-user' ||
+            popupErr.message?.includes('Cross-Origin')) {
+          
+          if (popupErr.code === 'auth/popup-closed-by-user') {
+            setLoading(false);
+            return;
+          }
+          
+          setError('❌ Popup blocked! Trying alternative login...');
+          // Don't throw, will be handled below
           setLoading(false);
           return;
         }
@@ -180,7 +188,6 @@ const AdminLogin = () => {
     } catch (err) {
       console.error('Google login error:', err);
       if (err.code === 'auth/popup-closed-by-user') {
-        // User closed popup - no error message needed
         return;
       }
       setError('❌ Google login failed: ' + (err.message || 'Please try again.'));
