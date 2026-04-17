@@ -1,302 +1,565 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { getStudentEnrollments } from '../firebase/enrollmentService';
 import { db } from '../firebase/config';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
-  const { user, userRole } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [studentData, setStudentData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    dateOfBirth: '',
+    qualification: '',
+    schoolCollege: '',
+    parentName: '',
+    parentPhone: '',
+    emergencyContact: '',
+    interests: '',
+    enrolledCourses: [],
+  });
+
   const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({});
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [userProfile, setUserProfile] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-  });
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-  });
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
+  // Fetch student data
   useEffect(() => {
-    if (userRole !== 'student') {
-      navigate('/');
-      return;
-    }
+    const fetchStudentData = async () => {
+      try {
+        if (!user) return;
 
-    fetchStudentData();
-  }, [user, userRole, navigate]);
+        // Get student profile from Firestore
+        const studentDocRef = doc(db, 'users', user.uid);
+        const studentDocSnap = await getDoc(studentDocRef);
 
-  const fetchStudentData = async () => {
-    try {
-      if (user) {
-        // Fetch user profile from Firestore
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          setUserProfile(userData);
-          setFormData(userData);
+        if (studentDocSnap.exists()) {
+          const data = studentDocSnap.data();
+          setStudentData({
+            name: data.name || '',
+            email: data.email || user.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            city: data.city || '',
+            state: data.state || '',
+            pincode: data.pincode || '',
+            dateOfBirth: data.dateOfBirth || '',
+            qualification: data.qualification || '',
+            schoolCollege: data.schoolCollege || '',
+            parentName: data.parentName || '',
+            parentPhone: data.parentPhone || '',
+            emergencyContact: data.emergencyContact || '',
+            interests: data.interests || '',
+            enrolledCourses: data.enrolledCourses || [],
+          });
+          setEditData({
+            name: data.name || '',
+            email: data.email || user.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            city: data.city || '',
+            state: data.state || '',
+            pincode: data.pincode || '',
+            dateOfBirth: data.dateOfBirth || '',
+            qualification: data.qualification || '',
+            schoolCollege: data.schoolCollege || '',
+            parentName: data.parentName || '',
+            parentPhone: data.parentPhone || '',
+            emergencyContact: data.emergencyContact || '',
+            interests: data.interests || '',
+          });
         } else {
-          // Create new user document if doesn't exist
-          const newUserData = {
+          // Create initial profile if doesn't exist
+          const initialData = {
             name: user.displayName || '',
             email: user.email,
             phone: '',
             address: '',
-            userId: user.uid,
-            createdAt: new Date(),
+            city: '',
+            state: '',
+            pincode: '',
+            dateOfBirth: '',
+            qualification: '',
+            schoolCollege: '',
+            parentName: '',
+            parentPhone: '',
+            emergencyContact: '',
+            interests: '',
+            enrolledCourses: [],
             role: 'student',
+            uid: user.uid,
+            createdAt: new Date(),
           };
-          await updateDoc(userDocRef, newUserData);
-          setUserProfile(newUserData);
-          setFormData(newUserData);
+          await setDoc(studentDocRef, initialData);
+          setStudentData(initialData);
+          setEditData(initialData);
         }
 
         // Fetch enrolled courses
-        const enrollments = await getStudentEnrollments(user);
-        const coursesWithDetails = [];
+        const enrollmentsRef = collection(db, 'enrollments');
+        const q = query(enrollmentsRef, where('studentId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
         
-        for (const enrollment of enrollments) {
-          try {
-            const response = await fetch(
-              `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/courses/${enrollment.courseId}`
-            );
-            if (response.ok) {
-              const result = await response.json();
-              coursesWithDetails.push({
-                ...result.data,
-                enrollmentId: enrollment.id,
-                progress: enrollment.progress || 0,
-              });
-            }
-          } catch (err) {
-            console.warn('Could not fetch course details:', err);
-            coursesWithDetails.push({
-              id: enrollment.courseId,
-              title: enrollment.courseTitle || 'Unknown Course',
-              enrollmentId: enrollment.id,
-              progress: enrollment.progress || 0,
+        const courses = [];
+        for (const doc of querySnapshot.docs) {
+          const enrollmentData = doc.data();
+          const courseRef = doc(db, 'courses', enrollmentData.courseId);
+          const courseSnap = await getDoc(courseRef);
+          if (courseSnap.exists()) {
+            courses.push({
+              ...courseSnap.data(),
+              courseId: enrollmentData.courseId,
+              enrollmentStatus: enrollmentData.status || 'enrolled',
             });
           }
         }
-        
-        setEnrolledCourses(coursesWithDetails);
+        setEnrolledCourses(courses);
 
-        // Fetch cart
-        const cartCollectionRef = collection(db, `users/${user.uid}/cart`);
-        const cartSnap = await getDocs(cartCollectionRef);
-        const cartItems = cartSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCart(cartItems);
-
-        // Fetch recent orders
-        const ordersCollectionRef = collection(db, `users/${user.uid}/orders`);
-        const ordersQuery = query(ordersCollectionRef);
-        const ordersSnap = await getDocs(ordersQuery);
-        const ordersList = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-        setOrders(ordersList);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching student data:', err);
+        setError('Failed to load student data');
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const handleInputChange = (e) => {
+    fetchStudentData();
+  }, [user]);
+
+  const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEditData({
+      ...editData,
+      [name]: value,
+    });
   };
 
   const handleSaveProfile = async () => {
     try {
-      const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, formData);
-      setUserProfile(formData);
-      setEditing(false);
-      alert('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Failed to update profile');
+      setError('');
+      if (!user) return;
+
+      const studentDocRef = doc(db, 'users', user.uid);
+      await updateDoc(studentDocRef, editData);
+
+      setStudentData(editData);
+      setIsEditing(false);
+      setSuccessMessage('Profile updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to save profile');
     }
   };
 
+  const handleCancel = () => {
+    setEditData(studentData);
+    setIsEditing(false);
+  };
+
   if (loading) {
-    return <div className="dashboard-container"><p>Loading...</p></div>;
+    return (
+      <div className="student-dashboard">
+        <div className="loading">Loading...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>📚 My Learning Dashboard</h1>
-        <p>Welcome back, {userProfile?.name || user?.email}!</p>
-      </div>
+    <div className="student-dashboard">
+      <div className="dashboard-container">
+        {/* Sidebar */}
+        <aside className="dashboard-sidebar">
+          <div className="student-avatar">
+            <div className="avatar-circle">
+              {studentData.name.charAt(0).toUpperCase()}
+            </div>
+            <h3>{studentData.name || 'Student'}</h3>
+            <p className="student-email">{studentData.email}</p>
+          </div>
 
-      <div className="dashboard-grid">
-        {/* User Profile Section */}
-        <div className="profile-section">
-          <div className="profile-card">
-            <h2>👤 My Information</h2>
-            {!editing ? (
-              <div className="profile-info">
-                <div className="info-row">
-                  <label>Name:</label>
-                  <p>{userProfile.name}</p>
+          <nav className="sidebar-menu">
+            <ul>
+              <li className="menu-item active">
+                <span>📋 My Profile</span>
+              </li>
+              <li className="menu-item">
+                <span>📚 My Courses ({enrolledCourses.length})</span>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="dashboard-main">
+          {error && <div className="alert alert-error">{error}</div>}
+          {successMessage && <div className="alert alert-success">{successMessage}</div>}
+
+          {/* Profile Section */}
+          <section className="profile-section">
+            <div className="section-header">
+              <h2>My Profile</h2>
+              {!isEditing ? (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setIsEditing(true)}
+                >
+                  ✏️ Edit Profile
+                </button>
+              ) : (
+                <div className="button-group">
+                  <button 
+                    className="btn btn-success"
+                    onClick={handleSaveProfile}
+                  >
+                    ✓ Save
+                  </button>
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={handleCancel}
+                  >
+                    ✕ Cancel
+                  </button>
                 </div>
-                <div className="info-row">
-                  <label>Email:</label>
-                  <p>{userProfile.email}</p>
+              )}
+            </div>
+
+            {isEditing ? (
+              // Edit Form
+              <form className="profile-form">
+                <div className="form-section">
+                  <h3>Personal Information</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="name">Full Name *</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={editData.name || ''}
+                        onChange={handleEditChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="email">Email *</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={editData.email || ''}
+                        disabled
+                        className="disabled"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="phone">Phone Number</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={editData.phone || ''}
+                        onChange={handleEditChange}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="dateOfBirth">Date of Birth</label>
+                      <input
+                        type="date"
+                        id="dateOfBirth"
+                        name="dateOfBirth"
+                        value={editData.dateOfBirth || ''}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <label>Phone:</label>
-                  <p>{userProfile.phone || 'Not provided'}</p>
+
+                <div className="form-section">
+                  <h3>Address Information</h3>
+                  <div className="form-grid">
+                    <div className="form-group full-width">
+                      <label htmlFor="address">Address</label>
+                      <input
+                        type="text"
+                        id="address"
+                        name="address"
+                        value={editData.address || ''}
+                        onChange={handleEditChange}
+                        placeholder="Enter your address"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="city">City</label>
+                      <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        value={editData.city || ''}
+                        onChange={handleEditChange}
+                        placeholder="City"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="state">State</label>
+                      <input
+                        type="text"
+                        id="state"
+                        name="state"
+                        value={editData.state || ''}
+                        onChange={handleEditChange}
+                        placeholder="State"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <input
+                        type="text"
+                        id="pincode"
+                        name="pincode"
+                        value={editData.pincode || ''}
+                        onChange={handleEditChange}
+                        placeholder="Pincode"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <label>Address:</label>
-                  <p>{userProfile.address || 'Not provided'}</p>
+
+                <div className="form-section">
+                  <h3>Education Information</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="qualification">Current Qualification</label>
+                      <input
+                        type="text"
+                        id="qualification"
+                        name="qualification"
+                        value={editData.qualification || ''}
+                        onChange={handleEditChange}
+                        placeholder="e.g., 10th, 12th, BA, BCA"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="schoolCollege">School/College Name</label>
+                      <input
+                        type="text"
+                        id="schoolCollege"
+                        name="schoolCollege"
+                        value={editData.schoolCollege || ''}
+                        onChange={handleEditChange}
+                        placeholder="Name of school/college"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <button className="edit-btn" onClick={() => setEditing(true)}>Edit Profile</button>
-              </div>
+
+                <div className="form-section">
+                  <h3>Parent/Guardian Information</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="parentName">Parent/Guardian Name</label>
+                      <input
+                        type="text"
+                        id="parentName"
+                        name="parentName"
+                        value={editData.parentName || ''}
+                        onChange={handleEditChange}
+                        placeholder="Parent/Guardian name"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="parentPhone">Parent/Guardian Phone</label>
+                      <input
+                        type="tel"
+                        id="parentPhone"
+                        name="parentPhone"
+                        value={editData.parentPhone || ''}
+                        onChange={handleEditChange}
+                        placeholder="Parent contact number"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="emergencyContact">Emergency Contact</label>
+                      <input
+                        type="tel"
+                        id="emergencyContact"
+                        name="emergencyContact"
+                        value={editData.emergencyContact || ''}
+                        onChange={handleEditChange}
+                        placeholder="Emergency contact number"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <h3>Interests</h3>
+                  <div className="form-group full-width">
+                    <label htmlFor="interests">Fields of Interest</label>
+                    <textarea
+                      id="interests"
+                      name="interests"
+                      value={editData.interests || ''}
+                      onChange={handleEditChange}
+                      placeholder="Tell us about your learning interests..."
+                      rows="4"
+                    ></textarea>
+                  </div>
+                </div>
+              </form>
             ) : (
-              <div className="profile-form">
-                <div className="form-group">
-                  <label>Name:</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
+              // View Profile
+              <div className="profile-view">
+                <div className="info-section">
+                  <h3>Personal Information</h3>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <label>Full Name</label>
+                      <p>{studentData.name || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Email</label>
+                      <p>{studentData.email}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Phone Number</label>
+                      <p>{studentData.phone || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Date of Birth</label>
+                      <p>{studentData.dateOfBirth || '—'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Phone:</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} />
+
+                <div className="info-section">
+                  <h3>Address Information</h3>
+                  <div className="info-grid">
+                    <div className="info-item full-width">
+                      <label>Address</label>
+                      <p>{studentData.address || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>City</label>
+                      <p>{studentData.city || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>State</label>
+                      <p>{studentData.state || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Pincode</label>
+                      <p>{studentData.pincode || '—'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Address:</label>
-                  <textarea name="address" value={formData.address} onChange={handleInputChange}></textarea>
+
+                <div className="info-section">
+                  <h3>Education Information</h3>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <label>Current Qualification</label>
+                      <p>{studentData.qualification || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>School/College</label>
+                      <p>{studentData.schoolCollege || '—'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="form-buttons">
-                  <button className="save-btn" onClick={handleSaveProfile}>Save Changes</button>
-                  <button className="cancel-btn" onClick={() => setEditing(false)}>Cancel</button>
+
+                <div className="info-section">
+                  <h3>Parent/Guardian Information</h3>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <label>Parent/Guardian Name</label>
+                      <p>{studentData.parentName || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Parent/Guardian Phone</label>
+                      <p>{studentData.parentPhone || '—'}</p>
+                    </div>
+                    <div className="info-item">
+                      <label>Emergency Contact</label>
+                      <p>{studentData.emergencyContact || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="info-section">
+                  <h3>Learning Interests</h3>
+                  <div className="info-grid full-width">
+                    <p>{studentData.interests || '—'}</p>
+                  </div>
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </section>
 
-        {/* Stats Section */}
-        <div className="dashboard-stats">
-          <div className="stat-card">
-            <div className="stat-icon">📖</div>
-            <div className="stat-content">
-              <h3>{enrolledCourses.length}</h3>
-              <p>Courses Enrolled</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🛒</div>
-            <div className="stat-content">
-              <h3>{cart.length}</h3>
-              <p>Items in Cart</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">📦</div>
-            <div className="stat-content">
-              <h3>{orders.length}</h3>
-              <p>Recent Orders</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cart Section */}
-      <div className="cart-section">
-        <h2>🛒 Your Cart</h2>
-        {cart.length > 0 ? (
-          <div className="cart-items">
-            <table className="cart-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Quantity</th>
-                  <th>Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.quantity}</td>
-                    <td>₹{item.price}</td>
-                    <td>₹{item.quantity * item.price}</td>
-                  </tr>
+          {/* Enrolled Courses Section */}
+          <section className="courses-section">
+            <h2>My Enrolled Courses</h2>
+            {enrolledCourses.length === 0 ? (
+              <div className="empty-state">
+                <p>You haven't enrolled in any courses yet.</p>
+                <a href="/courses" className="btn btn-primary">Browse Courses</a>
+              </div>
+            ) : (
+              <div className="courses-grid">
+                {enrolledCourses.map((course) => (
+                  <div key={course.courseId} className="course-card">
+                    <div className="course-image">
+                      {course.image ? (
+                        <img src={course.image} alt={course.title} />
+                      ) : (
+                        <div className="image-placeholder">📚</div>
+                      )}
+                    </div>
+                    <div className="course-content">
+                      <h4>{course.title}</h4>
+                      <p className="course-category">{course.category}</p>
+                      <p className="course-description">{course.description}</p>
+                      <div className="course-meta">
+                        <span className="instructor">👨‍🏫 {course.instructor}</span>
+                        <span className={`status ${course.enrollmentStatus}`}>
+                          {course.enrollmentStatus}
+                        </span>
+                      </div>
+                      <a 
+                        href={`/course/${course.courseId}`}
+                        className="btn btn-outline"
+                      >
+                        View Course
+                      </a>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-            <button className="checkout-btn">Proceed to Checkout</button>
-          </div>
-        ) : (
-          <p>Your cart is empty</p>
-        )}
-      </div>
-
-      {/* Orders Section */}
-      <div className="orders-section">
-        <h2>📦 Recent Orders</h2>
-        {orders.length > 0 ? (
-          <div className="orders-list">
-            {orders.map(order => (
-              <div key={order.id} className="order-card">
-                <div className="order-header">
-                  <h3>Order #{order.id.substring(0, 8)}</h3>
-                  <span className="order-date">{new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="order-details">
-                  <p><strong>Amount:</strong> ₹{order.total}</p>
-                  <p><strong>Status:</strong> <span className="status">{order.status || 'Processing'}</span></p>
-                  <p><strong>Items:</strong> {order.items?.length || 0}</p>
-                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p>No orders yet</p>
-        )}
-      </div>
-
-      {/* Enrolled Courses Section */}
-      <div className="course-section">
-        <h2>📚 Enrolled Courses</h2>
-        {enrolledCourses.length > 0 ? (
-          <div className="courses-list">
-            {enrolledCourses.map(course => (
-              <div key={course.id} className="course-card">
-                <h3>{course.title}</h3>
-                <p>{course.description}</p>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${course.progress}%` }}></div>
-                </div>
-                <p className="progress-text">{course.progress}% Complete</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>No enrolled courses yet</p>
-        )}
+            )}
+          </section>
+        </main>
       </div>
     </div>
   );
 };
 
 export default StudentDashboard;
+ 
