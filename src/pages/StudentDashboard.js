@@ -180,10 +180,10 @@ const StudentDashboard = () => {
         <aside className="dashboard-sidebar">
           <div className="student-avatar">
             <div className="avatar-circle">
-              {studentData.name.charAt(0).toUpperCase()}
+              {studentData.name ? studentData.name.charAt(0).toUpperCase() : 'S'}
             </div>
             <h3>{studentData.name || 'Student'}</h3>
-            <p className="student-email">{studentData.email}</p>
+            <p className="student-email">{studentData.email || 'user@whizz.com'}</p>
           </div>
 
           <nav className="sidebar-menu">

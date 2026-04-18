@@ -88,31 +88,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
-  });
-});
-
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.message);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err : {}
-  });
-});
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════════════════════╗
-║   🚀 Whizz Backend Server Running                      ║
-║   📍 Port: ${PORT}                                          ║
-║   🌐 URL: http://localhost:${PORT}                    ║
-║   💾 Database: Firebase Firestore                      ║
-║   🔐 Auth: Firebase Authentication                     ║
-╚════════════════════════════════════════════════════════╝
-  `);
-});
-
-module.exports = app;
