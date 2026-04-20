@@ -31,31 +31,48 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       
-      // Use backend API to create user with proper role setup
-      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const signupResponse = await fetch(`${backendUrl}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          name,
-          role: role || 'student',
-        }),
-      });
-
-      if (!signupResponse.ok) {
-        const errorData = await signupResponse.json();
-        throw new Error(errorData.message || 'Backend signup failed');
-      }
-
-      // Now sign in with Firebase Auth
+      // Create Firebase Auth user
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = result.user;
-
       setUser(newUser);
+      
+      // Store user data in Firestore (frontend handles this since backend has credential issues)
+      const userData = {
+        uid: newUser.uid,
+        email,
+        fullName: name,
+        role: role || 'student',
+        sign_up_as: role || 'student',
+        profilePicture: null,
+        bio: '',
+        phone: '',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        enrolledCourses: [],
+        completedCourses: [],
+      };
+      
+      try {
+        await setDoc(doc(db, 'users', newUser.uid), userData);
+        console.log(`✅ User document created in Firestore: ${newUser.uid} with role: ${role}`);
+      } catch (firestoreError) {
+        console.warn('⚠️ Could not save to Firestore:', firestoreError.message);
+        // Continue anyway - user was created in Auth
+      }
+      
+      // Also notify backend for any additional setup
+      try {
+        const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        await fetch(`${backendUrl}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name, role: role || 'student' }),
+        });
+      } catch (backendError) {
+        console.warn('Backend notification failed:', backendError.message);
+      }
+      
       setUserRole(role);
       return newUser;
     } catch (err) {
@@ -157,7 +174,14 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser);
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUserRole(userDoc.data().role);
+            const userData = userDoc.data();
+            // Support both field names: role (new) and sign_up_as (old)
+            const role = userData.role || userData.sign_up_as || 'student';
+            setUserRole(role);
+            console.log('User role set to:', role);
+          } else {
+            console.log('User document not found, defaulting to student');
+            setUserRole('student');
           }
         } else {
           setUser(null);
@@ -165,6 +189,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         setError(err.message);
+        console.error('Auth error:', err);
       } finally {
         setLoading(false);
       }

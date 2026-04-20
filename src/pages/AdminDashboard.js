@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (userRole !== 'admin') { navigate('/'); return; }
+    if (!user || userRole !== 'admin') { navigate('/'); return; }
     fetchAdminData();
   }, [user, userRole, navigate]);
 

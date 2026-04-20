@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { db } from '../firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './Contact.css';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
   });
@@ -28,23 +27,33 @@ const Contact = () => {
     setError('');
 
     try {
-      // Save to Firebase 'client' collection
-      await addDoc(collection(db, 'client'), {
-        full_name: formData.name,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      // Send message via backend API (avoids Firestore permission issues)
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/messages/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          message: formData.message,
+        }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
       console.error('Error saving message:', err);
-      setError('Failed to send message. Please try again.');
+      setError(err.message || 'Failed to send message. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -131,6 +140,17 @@ const Contact = () => {
               onChange={handleChange}
               placeholder="your@email.com"
               required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Phone Number</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="+91 98765-43210"
             />
           </div>
 

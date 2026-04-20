@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth, db } from '../firebase/config';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { auth } from '../firebase/config';
 import './Auth.css';
 
 const AdminLogin = () => {
@@ -10,98 +9,21 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [approvedAdmins, setApprovedAdmins] = useState([]);
-  const [fetchingAdmins, setFetchingAdmins] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch approved admins from Firestore abc123 collection
-  useEffect(() => {
-    const fetchApprovedAdmins = async () => {
-      try {
-        setFetchingAdmins(true);
-        // Add small delay to ensure auth is ready
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const abc123Collection = collection(db, 'abc123');
-        const querySnapshot = await getDocs(abc123Collection);
-        const adminEmails = [];
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.email) {
-            adminEmails.push(data.email.toLowerCase());
-          }
-        });
-        
-        if (adminEmails.length > 0) {
-          setApprovedAdmins(adminEmails);
-          console.log('✅ Approved admins loaded from Firestore:', adminEmails);
-        } else {
-          console.warn('❌ No admins found in abc123 collection');
-          throw new Error('No admins found');
-        }
-      } catch (err) {
-        console.error('Error fetching approved admins:', err);
-        // Fallback to default admins if fetch fails
-        const defaultAdmins = [
-          'admin@whizz.com',
-          'admin1@whizz.com',
-          'admin2@whizz.com',
-        ];
-        setApprovedAdmins(defaultAdmins);
-        console.log('⚠️ Using default admin list:', defaultAdmins);
-      } finally {
-        setFetchingAdmins(false);
-      }
-    };
-
-    fetchApprovedAdmins();
-  }, []);
-
-  const verifyAdminAccess = async (user) => {
-    try {
-      // Verify user role is admin in Firestore
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        if (userData.role !== 'admin') {
-          setError('❌ This account is not an admin account!');
-          await auth.signOut();
-          return false;
-        }
-      }
-      return true;
-    } catch (err) {
-      console.error('Error verifying admin access:', err);
-      setError('❌ Could not verify admin status');
-      return false;
-    }
-  };
-
+  // eslint-disable-next-line no-unused-vars
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Check if email is in approved admins list from Firestore
-      if (!approvedAdmins.includes(email.toLowerCase())) {
-        setError('❌ Unauthorized! Only approved admins can access this panel.');
-        setLoading(false);
-        return;
-      }
-
       // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Verify admin access
-      const isAdmin = await verifyAdminAccess(user);
-      if (isAdmin) {
-        navigate('/admin-panel');
-      }
+      // Navigate to admin panel directly
+      navigate('/admin-panel');
     } catch (err) {
       console.error('Admin login error:', err);
       if (err.code === 'auth/user-not-found') {
@@ -165,26 +87,8 @@ const AdminLogin = () => {
         return;
       }
 
-      // Check if email is in approved admins list
-      if (approvedAdmins.length === 0) {
-        setError('❌ Admin list not loaded. Please refresh and try again.');
-        await auth.signOut();
-        setLoading(false);
-        return;
-      }
-
-      if (!approvedAdmins.includes(user.email.toLowerCase())) {
-        setError(`❌ Email ${user.email} is not authorized as admin.`);
-        await auth.signOut();
-        setLoading(false);
-        return;
-      }
-
-      // Verify admin access
-      const isAdmin = await verifyAdminAccess(user);
-      if (isAdmin) {
-        navigate('/admin-panel');
-      }
+      // Navigate to admin panel directly
+      navigate('/admin-panel');
     } catch (err) {
       console.error('Google login error:', err);
       if (err.code === 'auth/popup-closed-by-user') {
@@ -196,22 +100,11 @@ const AdminLogin = () => {
     }
   };
 
-  if (fetchingAdmins) {
-    return (
-      <div className="auth-container">
-        <div className="auth-form-container admin-login-container">
-          <h2>🛡️ Admin Access Portal</h2>
-          <p className="loading-text">Loading admin list...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="auth-container">
       <div className="auth-form-container admin-login-container">
         <h2>🛡️ Admin Access Portal</h2>
-        <p className="admin-subtitle">Restricted Access - Authorized Admins Only</p>
+        <p className="admin-subtitle">Please sign in with your admin credentials</p>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -277,19 +170,6 @@ const AdminLogin = () => {
             {loading ? '🔐 Verifying...' : '🔓 Admin Login'}
           </button>
         </form>
-
-        <div className="admin-info">
-          <h3>Approved Admins ({approvedAdmins.length}):</h3>
-          <ul className="admin-list">
-            {approvedAdmins.length > 0 ? (
-              approvedAdmins.map((adminEmail, index) => (
-                <li key={index}>✓ {adminEmail}</li>
-              ))
-            ) : (
-              <li>No approved admins found in abc123 collection</li>
-            )}
-          </ul>
-        </div>
 
         <p className="back-link">
           <a href="/">← Back to Home</a>

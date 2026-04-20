@@ -139,4 +139,66 @@ router.get('/:userId/stats', verifyToken, async (req, res) => {
   }
 });
 
+// ✅ UPDATE USER ROLE TO ADMIN (Development only)
+router.post('/make-admin-by-email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const decodedEmail = decodeURIComponent(email);
+
+    // Find user by email
+    const snapshot = await db.collection('users').where('email', '==', decodedEmail).limit(1).get();
+    
+    if (snapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: `User with email ${decodedEmail} not found`,
+      });
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userId = userDoc.id;
+
+    // Update user role to admin
+    await db.collection('users').doc(userId).update({
+      role: 'admin',
+      sign_up_as: 'admin',
+      updatedAt: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message: `User ${decodedEmail} is now an admin!`,
+      userId: userId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.post('/:userId/make-admin', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Update user role to admin
+    await db.collection('users').doc(userId).update({
+      role: 'admin',
+      sign_up_as: 'admin',
+      updatedAt: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message: `User ${userId} is now an admin!`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;

@@ -20,11 +20,12 @@ const ProtectedRoute = ({ children, requiredRole, userRole, user, loading }) => 
     );
   }
 
+  // Allow admins to access all dashboards
   if (requiredRole && userRole !== requiredRole && userRole !== 'admin') {
     return (
       <div className="protected-error">
         <h2>Access Denied</h2>
-        <p>You don't have permission to access this page.</p>
+        <p>You don't have permission to access this page. Your role: {userRole}</p>
         <a href="/">Go Home</a>
       </div>
     );

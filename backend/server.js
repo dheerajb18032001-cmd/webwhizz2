@@ -8,6 +8,7 @@ const courseRoutes = require('./routes/courses');
 const enrollmentRoutes = require('./routes/enrollments');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
+const messagesRoutes = require('./routes/messages');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Additional security headers for popup handling
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  next();
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path}`);
@@ -53,6 +61,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // 404 Handler
 app.use((req, res) => {

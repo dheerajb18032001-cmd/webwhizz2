@@ -216,4 +216,110 @@ router.put('/profile', verifyToken, async (req, res) => {
   }
 });
 
+// ✅ SEED TEST USERS (Development only)
+router.post('/seed-test-users', async (req, res) => {
+  try {
+    const testUsers = [
+      {
+        email: 'admin@whizz.com',
+        password: 'Admin@123',
+        name: 'Admin User',
+        role: 'admin'
+      },
+      {
+        email: 'student@whizz.com',
+        password: 'Student@123',
+        name: 'Student User',
+        role: 'student'
+      },
+      {
+        email: 'instructor@whizz.com',
+        password: 'Instructor@123',
+        name: 'Instructor User',
+        role: 'instructor'
+      }
+    ];
+
+    const apiKey = process.env.FIREBASE_API_KEY || 'AIzaSyBE5HAG2wM3lwvwrYnLN2QBiQP2Kuc9n98';
+    const results = [];
+
+    for (const userData of testUsers) {
+      try {
+        // Create Firebase Auth user
+        const signupUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+        
+        const signupResponse = await fetch(signupUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userData.email,
+            password: userData.password,
+            returnSecureToken: true,
+          }),
+        });
+
+        let userRecord;
+        if (signupResponse.ok) {
+          const signupData = await signupResponse.json();
+          userRecord = {
+            uid: signupData.localId,
+            email: signupData.email,
+          };
+        } else {
+          // User might already exist, try to get the user
+          console.log(`User ${userData.email} might already exist`);
+          continue;
+        }
+
+        // Store in Firestore
+        const firestoreData = {
+          uid: userRecord.uid,
+          email: userData.email,
+          fullName: userData.name,
+          name: userData.name,
+          role: userData.role,
+          sign_up_as: userData.role,
+          profilePicture: null,
+          bio: '',
+          phone: '',
+          status: 'active',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          enrolledCourses: [],
+          completedCourses: [],
+        };
+
+        await db.collection('users').doc(userRecord.uid).set(firestoreData);
+        
+        results.push({
+          email: userData.email,
+          role: userData.role,
+          status: 'created'
+        });
+        
+        console.log(`✅ Created user: ${userData.email}`);
+      } catch (userErr) {
+        console.warn(`⚠️ Error creating user ${userData.email}:`, userErr.message);
+        results.push({
+          email: userData.email,
+          role: userData.role,
+          status: 'failed',
+          error: userErr.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Test users seeding complete',
+      results: results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
